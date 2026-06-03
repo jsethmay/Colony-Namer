@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Colony Namer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:           #0a0e1a;
+      --surface:      #111827;
+      --surface2:     #1a2236;
+      --border:       #1e3a5f;
+      --border-dim:   #162840;
+      --silver:       #a8b8cc;
+      --silver-bright:#d0dde8;
+      --silver-dim:   #5a6e82;
+      --blue:         #2a5f9e;
+      --blue-bright:  #3a7abf;
+      --blue-dim:     #1a3a5e;
+      --text:         #c8d8e8;
+      --text-dim:     #6a7f94;
+      --accent:       #4a9edd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1.5rem 4rem;
+      background-image:
+        radial-gradient(ellipse at 15% 30%, rgba(42,95,158,0.12) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 70%, rgba(74,158,221,0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 100%, rgba(26,58,94,0.2) 0%, transparent 60%);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .star-ornament {
+      color: var(--blue-bright);
+      font-size: 0.8rem;
+      letter-spacing: 0.8em;
+      margin-bottom: 1rem;
+      opacity: 0.7;
+    }
+
+    header h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 600;
+      color: var(--silver-bright);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    header .subtitle {
+      margin-top: 0.6rem;
+      font-size: 1rem;
+      color: var(--text-dim);
+      font-style: italic;
+      letter-spacing: 0.06em;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border), transparent);
+      margin: 1.8rem 0;
+    }
+
+    /* ── CONTROLS ── */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .select-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .select-wrapper label {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      margin-bottom: 0.4rem;
+    }
+
+    select#blocSelect {
+      width: 100%;
+      padding: 0.75rem 2.2rem 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border-dim);
+      color: var(--text);
+      font-family: 'Crimson Pro', serif;
+      font-size: 1rem;
+      font-weight: 300;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    select#blocSelect:hover,
+    select#blocSelect:focus {
+      border-color: var(--blue);
+    }
+
+    select#blocSelect option {
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .select-arrow {
+      position: absolute;
+      right: 0.9rem;
+      bottom: 0.85rem;
+      color: var(--silver-dim);
+      font-size: 0.7rem;
+      pointer-events: none;
+    }
+
+    .btn-wrapper {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    button#generate {
+      padding: 0.75rem 2rem;
+      background: transparent;
+      border: 1px solid var(--blue);
+      color: var(--silver-bright);
+      font-family: 'Cinzel', serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    button#generate::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(42,95,158,0.2), transparent);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+
+    button#generate:hover {
+      border-color: var(--accent);
+      color: var(--silver-bright);
+      box-shadow: 0 0 24px rgba(74,158,221,0.15);
+    }
+
+    button#generate:hover::before { opacity: 1; }
+    button#generate:active { transform: scale(0.98); }
+
+    /* ── RESULTS ── */
+    .results {
+      margin-top: 2rem;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .results.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Colony name block */
+    .colony-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 1.6rem 2rem;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .colony-block::before,
+    .colony-block::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: var(--blue);
+      border-style: solid;
+    }
+    .colony-block::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+    .colony-block::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+    .block-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .colony-name {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.4rem, 3vw, 1.9rem);
+      font-weight: 600;
+      color: var(--silver-bright);
+      letter-spacing: 0.08em;
+    }
+
+    /* accordion toggle for colony */
+    .accordion-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.8rem;
+      cursor: pointer;
+      color: var(--silver-dim);
+      font-size: 0.82rem;
+      font-style: italic;
+      user-select: none;
+      width: fit-content;
+      transition: color 0.2s;
+    }
+
+    .accordion-toggle:hover { color: var(--accent); }
+
+    .accordion-toggle .icon {
+      font-style: normal;
+      font-size: 1rem;
+      line-height: 1;
+      transition: transform 0.25s;
+      color: var(--blue-bright);
+    }
+
+    .accordion-toggle.open .icon { transform: rotate(45deg); }
+
+    .accordion-body {
+      display: none;
+      margin-top: 0.8rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .accordion-body.open { display: block; }
+
+    .detail-row {
+      display: grid;
+      grid-template-columns: 5rem 1fr;
+      gap: 0.3rem 1rem;
+      padding: 0.25rem 0;
+      font-size: 0.92rem;
+    }
+
+    .detail-label {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--blue-bright);
+      padding-top: 0.15rem;
+    }
+
+    .detail-value {
+      color: var(--text);
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    /* Cities section */
+    .cities-header {
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      margin-bottom: 0.8rem;
+    }
+
+    .city-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .city-item {
+      background: var(--surface);
+      border: 1px solid var(--border-dim);
+      padding: 0.7rem 1.1rem;
+      transition: border-color 0.2s;
+    }
+
+    .city-item:hover { border-color: var(--border); }
+
+    .city-item-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .city-number {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      color: var(--blue-dim);
+      letter-spacing: 0.1em;
+      min-width: 1.4rem;
+    }
+
+    .city-name {
+      flex: 1;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+
+    .city-toggle {
+      background: none;
+      border: none;
+      color: var(--silver-dim);
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      padding: 0 0.2rem;
+      transition: color 0.2s, transform 0.25s;
+    }
+
+    .city-toggle:hover { color: var(--accent); }
+    .city-toggle.open { transform: rotate(45deg); color: var(--accent); }
+
+    .city-details {
+      display: none;
+      margin-top: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .city-details.open { display: block; }
+
+    .city-details .detail-row {
+      font-size: 0.88rem;
+    }
+
+    /* ── COPY BUTTON ── */
+    .copy-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 1rem;
+    }
+
+    button#copyBtn {
+      padding: 0.5rem 1.2rem;
+      background: transparent;
+      border: 1px solid var(--border-dim);
+      color: var(--silver-dim);
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button#copyBtn:hover {
+      border-color: var(--blue);
+      color: var(--silver-bright);
+    }
+
+    button#copyBtn.copied {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* empty state */
+    .empty-state {
+      text-align: center;
+      padding: 3rem 0;
+      color: var(--text-dim);
+      font-style: italic;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+    }
+
+    .empty-state .icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.8rem;
+      opacity: 0.3;
+    }
+
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="star-ornament">✦ &nbsp; ✦ &nbsp; ✦</div>
+    <h1>Colony Namer</h1>
+    <p class="subtitle">Draw names from the traditions of Earth's great civilisations</p>
+  </header>
+
+  <div class="divider"></div>
+
+  <div class="controls">
+    <div class="select-wrapper">
+      <label for="blocSelect">Primary Founding Bloc</label>
+      <select id="blocSelect">
+        <!-- ============================================================
+             BLOCS LIST
+             To add a new bloc: add an <option> here with the exact
+             string you will use as the "bloc" field in your data below.
+             Example: <option value="Martian">Martian</option>
+        ============================================================ -->
+        <option value="African">African</option>
+        <option value="Chinese">Chinese</option>
+        <option value="East Asian">East Asian</option>
+        <option value="European">European</option>
+        <option value="Latin American">Latin American</option>
+        <option value="Middle Eastern">Middle Eastern</option>
+        <option value="Persian">Persian</option>
+        <option value="Southeast Asian">Southeast Asian</option>
+        <option value="South Asian">South Asian</option>
+      </select>
+      <span class="select-arrow">▾</span>
+    </div>
+    <div class="btn-wrapper">
+      <button id="generate">Generate</button>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty-state" id="emptyState">
+      <span class="icon">🌐</span>
+      Select a founding bloc and press Generate.
+    </div>
+    <div id="output" style="display:none;">
+      <div class="colony-block">
+        <div class="block-label">Colony / Planet Name</div>
+        <div class="colony-name" id="colonyName"></div>
+        <div class="accordion-toggle" id="colonyToggle">
+          <span class="icon">+</span>
+          <span>Origin &amp; notes</span>
+        </div>
+        <div class="accordion-body" id="colonyDetails">
+          <div class="detail-row">
+            <span class="detail-label">Bloc</span>
+            <span class="detail-value" id="colonyBloc"></span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Notes</span>
+            <span class="detail-value" id="colonyNotes"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="copy-bar">
+        <button id="copyBtn">Copy All</button>
+      </div>
+
+      <div class="cities-header">Settlement Names</div>
+      <div class="city-list" id="cityList"></div>
+    </div>
+  </div>
+
+  <div class="divider" style="margin-top:2rem;"></div>
+
+</div>
+
+<script>
+// ============================================================
+//  DATA
+//  Each entry: { name, type, bloc, notes }
+//  type is "colony" or "city" (colony names also appear as cities)
+//  bloc must exactly match an <option value="..."> above.
+//
+//  To add a new bloc:
+//    1. Add <option value="Martian">Martian</option> in the select above
+//    2. Add your entries to NAME_DATA below with bloc: "Martian"
+//
+//  To add names to an existing bloc: just add more objects.
+// ============================================================
+
+const NAME_DATA = [
+
+  // ── PLACEHOLDER DATA ──────────────────────────────────────
+  // Replace everything below with your real dataset.
+  // These are just examples to show the structure works.
+
+ 
+{"name": "Ilé Tuntun", "type": "colony", "bloc": "African", "notes": "Yoruba (Nigerian) for New Home"},
+{"name": "Obodo Ọhụrụ", "type": "colony", "bloc": "African", "notes": "Igbo (Nigerian) for New Land"},
+{"name": "Aṣà Tuntun", "type": "colony", "bloc": "African", "notes": "Yoruba (Nigerian) for New Culture"},
+{"name": "Arewa Nova", "type": "colony", "bloc": "African", "notes": "Hausa/Portuguese blend, northern Nigerian flavour"},
+{"name": "Ilizwe Elitsha", "type": "colony", "bloc": "African", "notes": "Xhosa (South African) for New World"},
+{"name": "Isizwe Esisha", "type": "colony", "bloc": "African", "notes": "Zulu (South African) for New Nation"},
+{"name": "Kgaolo", "type": "colony", "bloc": "African", "notes": "Sotho (South African) for New Chapter"},
+{"name": "Siyanda", "type": "colony", "bloc": "African", "notes": "Zulu/South African, means We Are Growing"},
+{"name": "Al Fajr Al Jadid", "type": "colony", "bloc": "African", "notes": "Egyptian Arabic for The New Dawn"},
+{"name": "Masr El Gedida", "type": "colony", "bloc": "African", "notes": "Egyptian Arabic for New Egypt"},
+{"name": "Aten", "type": "colony", "bloc": "African", "notes": "Ancient Egyptian sun disc deity"},
+{"name": "Zerzura", "type": "colony", "bloc": "African", "notes": "Mythical oasis city from North African legend"},
+{"name": "Kigali", "type": "city", "bloc": "African", "notes": "Real Rwandan capital, clean and modern feeling"},
+{"name": "Kumasi", "type": "city", "bloc": "African", "notes": "Real Ghanaian city, ancient Ashanti capital, has gravitas"},
+{"name": "Mombasa", "type": "city", "bloc": "African", "notes": "Real Kenyan coastal city, musical and warm"},
+{"name": "Malindi", "type": "city", "bloc": "African", "notes": "Ancient Kenyan trading port, exotic and beautiful"},
+{"name": "Lamu", "type": "city", "bloc": "African", "notes": "Oldest continuously inhabited Swahili settlement, tiny word enormous history"},
+{"name": "Tamale", "type": "city", "bloc": "African", "notes": "Real northern Ghanaian city, unpretentious and distinctive"},
+{"name": "Lobito", "type": "city", "bloc": "African", "notes": "Real Angolan port city, short and punchy"},
+{"name": "Beira", "type": "city", "bloc": "African", "notes": "Real Mozambican port, weathered and real feeling"},
+{"name": "Ndola", "type": "city", "bloc": "African", "notes": "Real Zambian copper belt city, industrial heritage baked in"},
+{"name": "Omdurman", "type": "city", "bloc": "African", "notes": "Real Sudanese city, site of famous battle, carries weight"},
+{"name": "Timbuktu", "type": "city", "bloc": "African", "notes": "Malian city, universally understood to mean the edge of the known world, ideal for a frontier city"},
+{"name": "Akorbi", "type": "city", "bloc": "African", "notes": "Invented, feels Akan/Ghanaian, sounds like a place that exists"},
+{"name": "Jelani", "type": "city", "bloc": "African", "notes": "Swahili for mighty, works beautifully as a city name"},
+{"name": "Taruja", "type": "city", "bloc": "African", "notes": "Invented with North African flavour, convincing"},
+{"name": "Mbeki", "type": "city", "bloc": "African", "notes": "Southern African surname repurposed as place name, very authentic convention"},
+{"name": "Zawadi", "type": "city", "bloc": "African", "notes": "Swahili for gift, warm and optimistic"},
+{"name": "Nkosi", "type": "city", "bloc": "African", "notes": "Zulu for lord or king, strong and short"},
+{"name": "Fasika", "type": "city", "bloc": "African", "notes": "Ethiopian word for Easter/renewal, works without being obviously Ethiopian"},
+{"name": "Ravenna", "type": "city", "bloc": "European", "notes": "Last capital of the Western Roman Empire, elegant and melancholy"},
+{"name": "Aquila", "type": "city", "bloc": "European", "notes": "Eagle in Latin, Classical Roman, strong and clean"},
+{"name": "Valeria", "type": "city", "bloc": "European", "notes": "Roman province name, feminine and proud"},
+{"name": "Dacia", "type": "city", "bloc": "European", "notes": "Roman name for roughly modern Romania, frontier province energy"},
+{"name": "Hispalis", "type": "city", "bloc": "European", "notes": "Roman name for Seville, more interesting than the modern name"},
+{"name": "Aldenmor", "type": "city", "bloc": "European", "notes": "Invented, feels authentically medieval English"},
+{"name": "Vethara", "type": "city", "bloc": "European", "notes": "Invented, vaguely Frankish/medieval European feeling"},
+{"name": "Castra", "type": "city", "bloc": "European", "notes": "Roman word for fort, root of Chester, Lancaster, Zaragoza and countless others"},
+{"name": "Kingsfall", "type": "city", "bloc": "European", "notes": "Medieval English invention, implies a story already happened there"},
+{"name": "Thornwall", "type": "city", "bloc": "European", "notes": "Medieval English invention, frontier defensive energy"},
+{"name": "Grímstad", "type": "city", "bloc": "European", "notes": "Norse for dark settlement, brooding and honest"},
+{"name": "Solvik", "type": "city", "bloc": "European", "notes": "Norse for Sun Bay, warm and hopeful"},
+{"name": "Eindfjord", "type": "city", "bloc": "European", "notes": "Invented but authentically Norse feeling"},
+{"name": "Vargheim", "type": "city", "bloc": "European", "notes": "Norse for Wolf Home, for a rough frontier town"},
+{"name": "Volterra", "type": "city", "bloc": "European", "notes": "Real Etruscan city in Tuscany, ancient and slightly sinister"},
+{"name": "Mirandel", "type": "city", "bloc": "European", "notes": "Invented, Portuguese flavoured, soft and warm"},
+{"name": "Almeria", "type": "city", "bloc": "European", "notes": "Real Spanish city with Moorish roots, sits between European and Islamic traditions"},
+{"name": "Novaya Zemlya", "type": "colony", "bloc": "European", "notes": "Russian for New Land, already a real Russian archipelago name"},
+{"name": "Zvezda", "type": "colony", "bloc": "European", "notes": "Russian for Star, simple and Soviet feeling"},
+{"name": "Rassvet", "type": "colony", "bloc": "European", "notes": "Russian for Dawn, warm and un-ironically hopeful"},
+{"name": "Rodina", "type": "colony", "bloc": "European", "notes": "Russian for Motherland, enormously loaded, a colony naming itself this is making a statement"},
+{"name": "Krasnaya", "type": "colony", "bloc": "European", "notes": "Russian for Red, politically loaded, someone absolutely pushes for this"},
+{"name": "Novgorod", "type": "city", "bloc": "European", "notes": "Russian, already means New City, Russians would absolutely reuse this"},
+{"name": "Severny", "type": "city", "bloc": "European", "notes": "Russian for Northern, Russians name things this habitually"},
+{"name": "Zarya", "type": "city", "bloc": "European", "notes": "Russian for Dawn, Soviet space programme energy, different flavour than Rassvet"},
+{"name": "Vostok", "type": "city", "bloc": "European", "notes": "Russian for East, famous Soviet spacecraft name, carries cosmonautic heritage"},
+{"name": "Akademgorodok", "type": "city", "bloc": "European", "notes": "Russian for Science City, real Siberian science settlement, perfect for a research colony"},
+{"name": "Krasnoyarsk", "type": "city", "bloc": "European", "notes": "Russian, means Red Ravine essentially, very Siberian frontier energy"},
+{"name": "Tikhiy", "type": "city", "bloc": "European", "notes": "Russian for Quiet or Peaceful, the name every rough frontier town gives itself ironically"},
+{"name": "Woolloomooloo", "type": "city", "bloc": "European", "notes": "Real Sydney suburb, Aboriginal origin, Australians would name a space city this partly as a joke that becomes real"},
+{"name": "Mullumbimby", "type": "city", "bloc": "European", "notes": "Real NSW town, Aboriginal origin, musical and warm"},
+{"name": "Cunnamulla", "type": "city", "bloc": "European", "notes": "Real Queensland town, Aboriginal origin, long horizon energy"},
+{"name": "Indooroopilly", "type": "city", "bloc": "European", "notes": "Real Brisbane suburb, Aboriginal origin, unwieldy and loveable"},
+{"name": "Narrabri", "type": "city", "bloc": "European", "notes": "Real NSW town, Aboriginal origin, clean and strong"},
+{"name": "Yamba", "type": "city", "bloc": "European", "notes": "Aboriginal origin, simple, warm, coastal feeling"},
+{"name": "Boorowa", "type": "city", "bloc": "European", "notes": "Small NSW town, Aboriginal origin, quiet and unhurried"},
+{"name": "Wirragulla", "type": "city", "bloc": "European", "notes": "Invented, authentically Aboriginal feeling, Australian colonial bloc"},
+{"name": "Botany", "type": "city", "bloc": "European", "notes": "Botany Bay, first Australian landing site, loaded with founding mythology"},
+{"name": "Endeavour", "type": "city", "bloc": "European", "notes": "Cook's ship, Australian colonial, exploration heritage"},
+{"name": "Macquarie", "type": "city", "bloc": "European", "notes": "Australian colonial governor name, very Australian institutional"},
+{"name": "Camden", "type": "city", "bloc": "European", "notes": "Real NSW town, understated Australian colonial"},
+{"name": "Flinders", "type": "city", "bloc": "European", "notes": "Matthew Flinders who mapped Australia, explorer heritage"},
+{"name": "Redgum", "type": "city", "bloc": "European", "notes": "Quintessentially Australian tree, unpretentious and specific"},
+{"name": "Spinifex", "type": "city", "bloc": "European", "notes": "Hardy Australian desert grass that survives everything, perfect colony metaphor"},
+{"name": "Saltbush", "type": "city", "bloc": "European", "notes": "Tough and adaptive Australian desert plant, same energy as Spinifex"},
+{"name": "Ironbark", "type": "city", "bloc": "European", "notes": "Type of Australian eucalyptus, strong and very Australian"},
+{"name": "Mirrabooka", "type": "colony", "bloc": "European", "notes": "Aboriginal name for the Southern Cross constellation, perfect for a space colony, Australian bloc"},
+{"name": "Gamilaraay", "type": "colony", "bloc": "European", "notes": "Aboriginal language group name meaning belonging to the river, ancient and musical, Australian bloc"},
+{"name": "Tjukurpa", "type": "colony", "bloc": "European", "notes": "The Dreaming, the Aboriginal concept of creation and existence, cosmologically enormous, Australian bloc"},
+{"name": "Yalara", "type": "colony", "bloc": "European", "notes": "Variant of Uluru's traditional name, carries the weight of the oldest continuous culture on Earth, Australian bloc"},
+{"name": "Baiame", "type": "colony", "bloc": "European", "notes": "Aboriginal Sky Father, creator god who lives in the stars, Australian bloc"},
+{"name": "New South", "type": "colony", "bloc": "European", "notes": "Deliberately on the nose, very Australian self awareness, Australian colonial"},
+{"name": "Austral", "type": "colony", "bloc": "European", "notes": "Latin root of Australia, clean and serious, Australian colonial"},
+{"name": "Antipode", "type": "colony", "bloc": "European", "notes": "The place furthest from home, carries beautiful melancholy, Australian colonial"},
+{"name": "Southmark", "type": "colony", "bloc": "European", "notes": "Invented but feels authentically colonial Australian"},
+{"name": "Saeroun Nara", "type": "colony", "bloc": "East Asian", "notes": "Korean for New Country, direct and unfussy"},
+{"name": "Haneul", "type": "colony", "bloc": "East Asian", "notes": "Korean for Sky or Heaven, simple and beautiful"},
+{"name": "Bom", "type": "colony", "bloc": "East Asian", "notes": "Korean for Spring, one syllable, surprising and lovely"},
+{"name": "Areum", "type": "colony", "bloc": "East Asian", "notes": "Korean for Beauty, poetic and understated"},
+{"name": "Saejong", "type": "city", "bloc": "East Asian", "notes": "Korean, New Sejong, references Korea's actual planned capital, very self aware"},
+{"name": "Hanbit", "type": "city", "bloc": "East Asian", "notes": "Korean for light or radiance, warm"},
+{"name": "Dodam", "type": "city", "bloc": "East Asian", "notes": "Korean for self sufficient and independent, perfect frontier city name"},
+{"name": "Mirae", "type": "city", "bloc": "East Asian", "notes": "Korean for Future, used without irony"},
+{"name": "Cheongna", "type": "city", "bloc": "East Asian", "notes": "Korean for Blue Wilderness, has frontier poetry"},
+{"name": "Budan", "type": "city", "bloc": "East Asian", "notes": "Invented but feels authentically Korean"},
+{"name": "Nuri", "type": "city", "bloc": "East Asian", "notes": "Korean for World or Universe, clean and strong"},
+{"name": "Reimei", "type": "colony", "bloc": "East Asian", "notes": "Japanese for Dawn or New Light, clean and beautiful"},
+{"name": "Akatsuki", "type": "colony", "bloc": "East Asian", "notes": "Japanese for Daybreak, already used for a Venus probe which gives it real legitimacy"},
+{"name": "Tokoyo", "type": "colony", "bloc": "East Asian", "notes": "Japanese for Eternal Land, from Japanese mythology"},
+{"name": "Mizuho", "type": "colony", "bloc": "East Asian", "notes": "Japanese for Abundant Rice/Fertile Land, ancient poetic name for Japan itself"},
+{"name": "Kakuriyo", "type": "colony", "bloc": "East Asian", "notes": "Japanese for The Hidden World, realm of the gods in Shinto tradition"},
+{"name": "Shinjō", "type": "city", "bloc": "East Asian", "notes": "Japanese for New Castle, authentic and understated"},
+{"name": "Haruki", "type": "city", "bloc": "East Asian", "notes": "Japanese for Spring Tree, works beautifully as a settlement name"},
+{"name": "Minato", "type": "city", "bloc": "East Asian", "notes": "Japanese for Harbour, simple and functional"},
+{"name": "Torii", "type": "city", "bloc": "East Asian", "notes": "Japanese Shinto gate, enormously symbolic"},
+{"name": "Kagayaki", "type": "city", "bloc": "East Asian", "notes": "Japanese for Radiance, for a capital or brightest city"},
+{"name": "Fusō", "type": "city", "bloc": "East Asian", "notes": "Ancient mythological name for Japan, repurposed as a colony city"},
+{"name": "Niji", "type": "city", "bloc": "East Asian", "notes": "Japanese for Rainbow, unpretentious and lovely"},
+{"name": "Navbharat", "type": "colony", "bloc": "South Asian", "notes": "Hindi for New India essentially, straightforward and proud"},
+{"name": "Akasha", "type": "colony", "bloc": "South Asian", "notes": "Sanskrit for sky or space itself, genuinely perfect"},
+{"name": "Dharitri", "type": "colony", "bloc": "South Asian", "notes": "Sanskrit for Earth/the sustaining one, beautiful for a colony world"},
+{"name": "Arjuna", "type": "colony", "bloc": "South Asian", "notes": "Sanskrit/Hindu, Mahabharata hero, carries warrior and noble connotations"},
+{"name": "Svarloka", "type": "colony", "bloc": "South Asian", "notes": "Sanskrit for the celestial world, from Hindu cosmology"},
+{"name": "Navpur", "type": "city", "bloc": "South Asian", "notes": "Hindi, New City, suffix pur meaning city is everywhere in Indian place names"},
+{"name": "Indrapur", "type": "city", "bloc": "South Asian", "notes": "Sanskrit/Hindu, City of Indra, king of the gods"},
+{"name": "Shantipur", "type": "city", "bloc": "South Asian", "notes": "Sanskrit/Hindu, City of Peace, optimistic founding energy"},
+{"name": "Agnigarh", "type": "city", "bloc": "South Asian", "notes": "Sanskrit/Hindu, Fire Fort, for an industrial or military city"},
+{"name": "Tara", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for Star, simple and feminine and strong"},
+{"name": "Vasundhara", "type": "city", "bloc": "South Asian", "notes": "Sanskrit/Hindu, Earth Goddess, for the oldest most established settlement"},
+{"name": "Vikrampur", "type": "city", "bloc": "South Asian", "notes": "Hindi/Sanskrit, City of Courage, very authentic naming convention"},
+{"name": "Al Jannah", "type": "colony", "bloc": "Middle Eastern", "notes": "Arabic/Islamic for Paradise, enormously loaded but absolutely would be used"},
+{"name": "Firdaus", "type": "colony", "bloc": "Middle Eastern", "notes": "Arabic/Persian Islamic tradition, The Highest Paradise"},
+{"name": "Nur", "type": "colony", "bloc": "Middle Eastern", "notes": "Arabic for Light, one syllable, perfect"},
+{"name": "Salam", "type": "colony", "bloc": "Middle Eastern", "notes": "Arabic for Peace, immediately recognisable across all Islamic cultures"},
+{"name": "Hilal", "type": "colony", "bloc": "Middle Eastern", "notes": "Arabic for Crescent Moon, the Islamic symbol itself as a planet name"},
+{"name": "Madinah Jadidah", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for New City, echoes Medina deliberately"},
+{"name": "Dar es Nur", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for House of Light, riffing on Dar es Salaam"},
+{"name": "Bab Al Sama", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for Gate of Heaven, perfect for a spaceport city"},
+{"name": "Andalus", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic, loaded with lost golden age nostalgia for Islamic scholars"},
+{"name": "Qurtuba", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic name for Córdoba, same nostalgic resonance as Andalus"},
+{"name": "Hikmah", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for Wisdom, for a university or administrative city"},
+{"name": "Zamzam", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic, the sacred Islamic well, repurposed as a city built around a water source"},
+{"name": "Anāhitā", "type": "colony", "bloc": "Persian", "notes": "Zoroastrian goddess of water and fertility, pre-Islamic Persian mythology, ancient and beautiful"},
+{"name": "Faravahar", "type": "colony", "bloc": "Persian", "notes": "Zoroastrian winged symbol representing the human soul striving upward, almost insultingly perfect for a space colony"},
+{"name": "Jamshid", "type": "colony", "bloc": "Persian", "notes": "Mythological Persian king of a golden age, from the Shahnameh"},
+{"name": "Sepehr", "type": "colony", "bloc": "Persian", "notes": "Persian for Sky or Celestial Sphere, clean and modern feeling"},
+{"name": "Aryana", "type": "colony", "bloc": "Persian", "notes": "Ancient name for the Persian homeland, pre-dates almost everything"},
+{"name": "Rostam", "type": "colony", "bloc": "Persian", "notes": "Greatest hero of the Shahnameh, the Persian Achilles, naming a planet after him is a statement of cultural pride"},
+{"name": "Persepolis", "type": "city", "bloc": "Persian", "notes": "Already means City of Persians, burnt by Alexander, reclaiming it as a colony city name is loaded with meaning"},
+{"name": "Pasargad", "type": "city", "bloc": "Persian", "notes": "Cyrus the Great's capital, oldest Persian imperial city"},
+{"name": "Shiraz", "type": "city", "bloc": "Persian", "notes": "Real Iranian city, cultural capital, associated with poetry and wine, gloriously inappropriate for a potentially Islamic colony"},
+{"name": "Nowruz", "type": "city", "bloc": "Persian", "notes": "Persian New Year, naming a founding city after the new year is perfect"},
+{"name": "Mehr", "type": "city", "bloc": "Persian", "notes": "Persian for Sun or Friendship, warm with dual meaning"},
+{"name": "Simurgh", "type": "city", "bloc": "Persian", "notes": "Mythological Persian phoenix bird, for a city that has been destroyed and rebuilt"},
+{"name": "Zal", "type": "city", "bloc": "Persian", "notes": "Shahnameh hero, short and strong"},
+{"name": "Azadi", "type": "city", "bloc": "Persian", "notes": "Persian for Freedom, Iranians have been marching toward this word for decades, carries enormous weight"},
+{"name": "Apadana", "type": "city", "bloc": "Persian", "notes": "The great audience hall of Persepolis, for a governmental or capital city"},
+{"name": "Tus", "type": "city", "bloc": "Persian", "notes": "Ancient Persian city, birthplace of Ferdowsi who wrote the Shahnameh, for a cultural or university city"},
+{"name": "Nusantara", "type": "colony", "bloc": "Southeast Asian", "notes": "Sanskrit-rooted Indonesian/Malay, means outer islands, already Indonesia's new capital name"},
+{"name": "Langit", "type": "colony", "bloc": "Southeast Asian", "notes": "Malay/Indonesian for Sky, simple and clean"},
+{"name": "Surya", "type": "colony", "bloc": "Southeast Asian", "notes": "Sun, shared across Indonesian, Filipino and Indian influenced cultures"},
+{"name": "Anantara", "type": "colony", "bloc": "Southeast Asian", "notes": "Sanskrit influenced Thai for Endless or Infinite, beautiful"},
+{"name": "Bintang", "type": "colony", "bloc": "Southeast Asian", "notes": "Malay for Star, warm and unpretentious"},
+{"name": "Maharlika", "type": "colony", "bloc": "Southeast Asian", "notes": "Ancient Filipino for noble free people, Marcos tried to rename the Philippines this, gives it complicated and interesting political baggage"},
+{"name": "Suvarnabhumi", "type": "colony", "bloc": "Southeast Asian", "notes": "Sanskrit/Thai for Golden Land, Bangkok's airport name, ancient and resonant"},
+{"name": "Singha", "type": "city", "bloc": "Southeast Asian", "notes": "Lion, ancient foundational symbol across the Southeast Asian region"},
+{"name": "Mentari", "type": "city", "bloc": "Southeast Asian", "notes": "Indonesian for Sun, softer than Surya"},
+{"name": "Bayani", "type": "city", "bloc": "Southeast Asian", "notes": "Filipino for Hero, strong founding city energy"},
+{"name": "Lawan", "type": "city", "bloc": "Southeast Asian", "notes": "Malay for Opposition or Against, for a rebellious frontier city"},
+{"name": "Angkor", "type": "city", "bloc": "Southeast Asian", "notes": "Khmer (Cambodian) for City itself, carries the weight of a lost civilisation"},
+{"name": "Kenari", "type": "city", "bloc": "Southeast Asian", "notes": "Indonesian for canary tree, unexpectedly lovely"},
+{"name": "Padi", "type": "city", "bloc": "Southeast Asian", "notes": "Malay for Rice, for an agricultural settlement, unpretentious and real"},
+{"name": "Dalisay", "type": "city", "bloc": "Southeast Asian", "notes": "Filipino for pure or unsullied, beautiful colony founding energy"},
+{"name": "Vihaan", "type": "city", "bloc": "Southeast Asian", "notes": "Dawn in Sanskrit influenced Vietnamese/Thai tradition"},
+{"name": "Tala", "type": "city", "bloc": "Southeast Asian", "notes": "Filipino goddess of stars, perfect and almost too on the nose"},
+{"name": "Moana Lani", "type": "colony", "bloc": "Southeast Asian", "notes": "Hawaiian for Heavenly Ocean, the stars as an ocean is core Polynesian navigation philosophy"},
+{"name": "Te Manawa", "type": "colony", "bloc": "Southeast Asian", "notes": "Māori for The Heart, for a colony that sees itself as the centre of something"},
+{"name": "Hokulea", "type": "colony", "bloc": "Southeast Asian", "notes": "Hawaiian for Star of Gladness, name of the famous traditional voyaging canoe, carries enormous cultural weight"},
+{"name": "Ranginui", "type": "colony", "bloc": "Southeast Asian", "notes": "Māori for Great Sky Father, naming a planet after the sky god"},
+{"name": "Pulotu", "type": "colony", "bloc": "Southeast Asian", "notes": "Polynesian spirit world or paradise, the destination beyond the horizon"},
+{"name": "Manu", "type": "city", "bloc": "Southeast Asian", "notes": "Polynesian for Bird, also means to soar, works on multiple levels"},
+{"name": "Atea", "type": "city", "bloc": "Southeast Asian", "notes": "Māori for Space itself, perfect for a spaceport city"},
+{"name": "Tāne", "type": "city", "bloc": "Southeast Asian", "notes": "Māori god of forests and humanity, for a first settlement"},
+{"name": "Hina", "type": "city", "bloc": "Southeast Asian", "notes": "Polynesian goddess of the moon across multiple traditions"},
+{"name": "Vai", "type": "city", "bloc": "Southeast Asian", "notes": "Water in most Polynesian languages, for a water source settlement"},
+{"name": "Lono", "type": "city", "bloc": "Southeast Asian", "notes": "Hawaiian god of agriculture and peace, for a farming colony"},
+{"name": "Marae", "type": "city", "bloc": "Southeast Asian", "notes": "Polynesian sacred gathering place, for a capital or ceremonial city"},
+{"name": "Guaraná", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian), means fruit like the eyes of the people, widely known word"},
+{"name": "Yporã", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian) for beautiful water"},
+{"name": "Amanajé", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian) for roughly tomorrow's people, perfect for a colony"},
+{"name": "Itapuã", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian) for rocky point, musical to say"},
+{"name": "Nova Alvorada", "type": "city", "bloc": "Latin American", "notes": "Brazilian Portuguese for New Dawn, Alvorada is the name of the Brazilian presidential palace"},
+{"name": "Terra Prometida", "type": "city", "bloc": "Latin American", "notes": "Brazilian Portuguese for Promised Land, on the nose but Brazilians would genuinely use it"},
+{"name": "Esperança Nova", "type": "city", "bloc": "Latin American", "notes": "Brazilian Portuguese, flipped word order feels distinctly Brazilian rather than generically Spanish"},
+{"name": "Tierra Nueva", "type": "city", "bloc": "Latin American", "notes": "Spanish for New Land, simple and dignified"},
+{"name": "Villa Aurora", "type": "city", "bloc": "Latin American", "notes": "Spanish, Aurora Settlement, pretty and very characteristic of Latin American naming"},
+{"name": "San Cristóbal Nuevo", "type": "city", "bloc": "Latin American", "notes": "Spanish Catholic, very authentic, saints names are everywhere in Latin American place names"},
+{"name": "Santa Tierra", "type": "city", "bloc": "Latin American", "notes": "Spanish Catholic for Holy Land, interesting resonance for a colony"},
+{"name": "Tierra Libre", "type": "city", "bloc": "Latin American", "notes": "Spanish revolutionary, Free Land, has that fist-in-the-air energy"},
+{"name": "Nuestra Señora del Cielo", "type": "city", "bloc": "Latin American", "notes": "Spanish Catholic, Our Lady of the Sky, Catholic naming convention colliding with literal sky context is gorgeous"},
+{"name": "Puerto Nuevo", "type": "city", "bloc": "Latin American", "notes": "Spanish for New Port, boring but authentic, exactly what exhausted settlers name things"},
+{"name": "Sumaq Urqu", "type": "city", "bloc": "Latin American", "notes": "Quechua (indigenous Andean) for Beautiful Mountain, for a colony near a notable landmark"},
+{"name": "Ixtlán", "type": "city", "bloc": "Latin American", "notes": "Nahuatl (indigenous Mesoamerican) flavour, sounds like somewhere real"},
+{"name": "Tlapalcán", "type": "city", "bloc": "Latin American", "notes": "Nahuatl/Mesoamerican, has authentic pre-Columbian weight"},
+{"name": "Ilé Tuntun", "type": "city", "bloc": "African", "notes": "Yoruba (Nigerian) for New Home"},
+{"name": "Obodo Ọhụrụ", "type": "city", "bloc": "African", "notes": "Igbo (Nigerian) for New Land"},
+{"name": "Aṣà Tuntun", "type": "city", "bloc": "African", "notes": "Yoruba (Nigerian) for New Culture"},
+{"name": "Arewa Nova", "type": "city", "bloc": "African", "notes": "Hausa/Portuguese blend, northern Nigerian flavour"},
+{"name": "Ilizwe Elitsha", "type": "city", "bloc": "African", "notes": "Xhosa (South African) for New World"},
+{"name": "Isizwe Esisha", "type": "city", "bloc": "African", "notes": "Zulu (South African) for New Nation"},
+{"name": "Kgaolo", "type": "city", "bloc": "African", "notes": "Sotho (South African) for New Chapter"},
+{"name": "Siyanda", "type": "city", "bloc": "African", "notes": "Zulu/South African, means We Are Growing"},
+{"name": "Al Fajr Al Jadid", "type": "city", "bloc": "African", "notes": "Egyptian Arabic for The New Dawn"},
+{"name": "Masr El Gedida", "type": "city", "bloc": "African", "notes": "Egyptian Arabic for New Egypt"},
+{"name": "Aten", "type": "city", "bloc": "African", "notes": "Ancient Egyptian sun disc deity"},
+{"name": "Zerzura", "type": "city", "bloc": "African", "notes": "Mythical oasis city from North African legend"},
+{"name": "Novaya Zemlya", "type": "city", "bloc": "European", "notes": "Russian for New Land, already a real Russian archipelago name"},
+{"name": "Zvezda", "type": "city", "bloc": "European", "notes": "Russian for Star, simple and Soviet feeling"},
+{"name": "Rassvet", "type": "city", "bloc": "European", "notes": "Russian for Dawn, warm and un-ironically hopeful"},
+{"name": "Rodina", "type": "city", "bloc": "European", "notes": "Russian for Motherland, enormously loaded"},
+{"name": "Krasnaya", "type": "city", "bloc": "European", "notes": "Russian for Red, politically loaded"},
+{"name": "Mirrabooka", "type": "city", "bloc": "European", "notes": "Aboriginal name for the Southern Cross constellation, Australian bloc"},
+{"name": "Gamilaraay", "type": "city", "bloc": "European", "notes": "Aboriginal language group name meaning belonging to the river, Australian bloc"},
+{"name": "Tjukurpa", "type": "city", "bloc": "European", "notes": "The Dreaming, the Aboriginal concept of creation and existence, Australian bloc"},
+{"name": "Yalara", "type": "city", "bloc": "European", "notes": "Variant of Uluru's traditional name, Australian bloc"},
+{"name": "Baiame", "type": "city", "bloc": "European", "notes": "Aboriginal Sky Father, creator god who lives in the stars, Australian bloc"},
+{"name": "New South", "type": "city", "bloc": "European", "notes": "Deliberately on the nose, very Australian self awareness"},
+{"name": "Austral", "type": "city", "bloc": "European", "notes": "Latin root of Australia, clean and serious"},
+{"name": "Antipode", "type": "city", "bloc": "European", "notes": "The place furthest from home, carries beautiful melancholy"},
+{"name": "Southmark", "type": "city", "bloc": "European", "notes": "Invented but feels authentically colonial Australian"},
+{"name": "Saeroun Nara", "type": "city", "bloc": "East Asian", "notes": "Korean for New Country, direct and unfussy"},
+{"name": "Haneul", "type": "city", "bloc": "East Asian", "notes": "Korean for Sky or Heaven, simple and beautiful"},
+{"name": "Bom", "type": "city", "bloc": "East Asian", "notes": "Korean for Spring, one syllable, surprising and lovely"},
+{"name": "Areum", "type": "city", "bloc": "East Asian", "notes": "Korean for Beauty, poetic and understated"},
+{"name": "Reimei", "type": "city", "bloc": "East Asian", "notes": "Japanese for Dawn or New Light, clean and beautiful"},
+{"name": "Akatsuki", "type": "city", "bloc": "East Asian", "notes": "Japanese for Daybreak, already used for a Venus probe"},
+{"name": "Tokoyo", "type": "city", "bloc": "East Asian", "notes": "Japanese for Eternal Land, from Japanese mythology"},
+{"name": "Mizuho", "type": "city", "bloc": "East Asian", "notes": "Japanese for Abundant Rice/Fertile Land, ancient poetic name for Japan itself"},
+{"name": "Kakuriyo", "type": "city", "bloc": "East Asian", "notes": "Japanese for The Hidden World, realm of the gods in Shinto tradition"},
+{"name": "Navbharat", "type": "city", "bloc": "South Asian", "notes": "Hindi for New India essentially, straightforward and proud"},
+{"name": "Akasha", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for sky or space itself"},
+{"name": "Dharitri", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for Earth/the sustaining one"},
+{"name": "Arjuna", "type": "city", "bloc": "South Asian", "notes": "Sanskrit/Hindu, Mahabharata hero, carries warrior and noble connotations"},
+{"name": "Svarloka", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for the celestial world, from Hindu cosmology"},
+{"name": "Al Jannah", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic/Islamic for Paradise"},
+{"name": "Firdaus", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic/Persian Islamic tradition, The Highest Paradise"},
+{"name": "Nur", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for Light, one syllable, perfect"},
+{"name": "Salam", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for Peace"},
+{"name": "Hilal", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for Crescent Moon, the Islamic symbol itself"},
+{"name": "Anāhitā", "type": "city", "bloc": "Persian", "notes": "Zoroastrian goddess of water and fertility, pre-Islamic Persian mythology"},
+{"name": "Faravahar", "type": "city", "bloc": "Persian", "notes": "Zoroastrian winged symbol representing the human soul striving upward"},
+{"name": "Jamshid", "type": "city", "bloc": "Persian", "notes": "Mythological Persian king of a golden age, from the Shahnameh"},
+{"name": "Sepehr", "type": "city", "bloc": "Persian", "notes": "Persian for Sky or Celestial Sphere"},
+{"name": "Aryana", "type": "city", "bloc": "Persian", "notes": "Ancient name for the Persian homeland, pre-dates almost everything"},
+{"name": "Rostam", "type": "city", "bloc": "Persian", "notes": "Greatest hero of the Shahnameh, the Persian Achilles"},
+{"name": "Nusantara", "type": "city", "bloc": "Southeast Asian", "notes": "Sanskrit-rooted Indonesian/Malay, means outer islands"},
+{"name": "Langit", "type": "city", "bloc": "Southeast Asian", "notes": "Malay/Indonesian for Sky"},
+{"name": "Surya", "type": "city", "bloc": "Southeast Asian", "notes": "Sun, shared across Indonesian, Filipino and Indian influenced cultures"},
+{"name": "Anantara", "type": "city", "bloc": "Southeast Asian", "notes": "Sanskrit influenced Thai for Endless or Infinite"},
+{"name": "Bintang", "type": "city", "bloc": "Southeast Asian", "notes": "Malay for Star, warm and unpretentious"},
+{"name": "Maharlika", "type": "city", "bloc": "Southeast Asian", "notes": "Ancient Filipino for noble free people, complicated political baggage that's honestly interesting"},
+{"name": "Suvarnabhumi", "type": "city", "bloc": "Southeast Asian", "notes": "Sanskrit/Thai for Golden Land, Bangkok's airport name"},
+{"name": "Moana Lani", "type": "city", "bloc": "Southeast Asian", "notes": "Hawaiian for Heavenly Ocean, Polynesian navigation philosophy"},
+{"name": "Te Manawa", "type": "city", "bloc": "Southeast Asian", "notes": "Māori for The Heart"},
+{"name": "Hokulea", "type": "city", "bloc": "Southeast Asian", "notes": "Hawaiian for Star of Gladness, name of the famous traditional voyaging canoe"},
+{"name": "Ranginui", "type": "city", "bloc": "Southeast Asian", "notes": "Māori for Great Sky Father"},
+{"name": "Pulotu", "type": "city", "bloc": "Southeast Asian", "notes": "Polynesian spirit world or paradise, the destination beyond the horizon"},
+{"name": "Guaraná", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian), means fruit like the eyes of the people"},
+{"name": "Yporã", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian) for beautiful water"},
+{"name": "Amanajé", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian) for roughly tomorrow's people"},
+{"name": "Itapuã", "type": "city", "bloc": "Latin American", "notes": "Tupi (Brazilian) for rocky point, musical to say"},
+{"name": "Nova Alvorada", "type": "city", "bloc": "Latin American", "notes": "Brazilian Portuguese for New Dawn"},
+{"name": "Terra Prometida", "type": "city", "bloc": "Latin American", "notes": "Brazilian Portuguese for Promised Land"},
+{"name": "Esperança Nova", "type": "city", "bloc": "Latin American", "notes": "Brazilian Portuguese, flipped word order feels distinctly Brazilian"},
+{"name": "Bayt Al Hikma", "type": "city", "bloc": "Middle Eastern", "notes": "Arabic for House of Wisdom, the great Baghdad library and translation centre of the Islamic golden age, for an academic city"},
+
+{"name": "Samarra", "type": "city", "bloc": "Middle Eastern", "notes": "Real ancient Iraqi city, name possibly means those who are pleased when they see it, haunting and beautiful"},
+
+{"name": "Carthage", "type": "city", "bloc": "Middle Eastern", "notes": "Phoenician city that challenged Rome, destroyed and rebuilt three times, the name alone carries the weight of civilisations that refused to die"},
+
+{"name": "Suryapur", "type": "city", "bloc": "South Asian", "notes": "Sanskrit, City of the Sun, warm and optimistic founding energy"},
+
+{"name": "Navagraha", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for the nine celestial bodies of Hindu astronomy, perfect for a space colony"},
+
+{"name": "Amaravati", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for City of the Immortals, real ancient Indian city name, carries enormous historical weight"},
+
+{"name": "Pushkar", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for Blue Lotus, real sacred city in Rajasthan, contemplative and beautiful"},
+
+{"name": "Dwaraka", "type": "city", "bloc": "South Asian", "notes": "Sanskrit, legendary city of Krishna, one of the seven sacred cities of Hinduism, mythologically loaded"},
+
+{"name": "Takshashila", "type": "city", "bloc": "South Asian", "notes": "Ancient Indian university city, one of the earliest centres of learning in the world, for an academic settlement"},
+
+{"name": "Nalanda", "type": "city", "bloc": "South Asian", "notes": "Ancient Buddhist university, destroyed and now being rebuilt on Earth, perfect resonance for a colony that carries knowledge forward"},
+
+{"name": "Chandrabhaga", "type": "city", "bloc": "South Asian", "notes": "Sanskrit for Moon River, ancient name for the Chenab river, poetic and feminine"},
+
+{"name": "Ecbatana", "type": "city", "bloc": "Persian", "notes": "Ancient Median capital, one of the great lost cities of the Persian world, carries the weight of a civilisation older than Persia itself"},
+
+{"name": "Susa", "type": "city", "bloc": "Persian", "notes": "One of the oldest cities in the world, Persian royal capital, biblical and ancient and enormous"},
+
+{"name": "Alamut", "type": "city", "bloc": "Persian", "notes": "The Eagle's Nest, mountain fortress of the Nizari Ismailis, for a remote or defensible settlement, has romantic and slightly dangerous energy"},
+
+{"name": "Nishapur", "type": "city", "bloc": "Persian", "notes": "Ancient Persian city, birthplace of Omar Khayyam who wrote the Rubaiyat, for a cultural or poetic settlement"},
+{"name": "Dì Yī Luò", "type": "city", "bloc": "Chinese", "notes": "Mandarin for First Landing, utilitarian and exactly what early settlers would call it"},
+{"name": "Hǎigǎng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Harbour or Port, functional and honest"},
+{"name": "Xīnzhàn", "type": "city", "bloc": "Chinese", "notes": "Mandarin for New Station, frontier outpost feeling"},
+{"name": "Běijīng Xīn", "type": "city", "bloc": "Chinese", "notes": "Not quite New Beijing, more like Beijing-But-Here, how settlers actually talk"},
+{"name": "Jiànguó Chéng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Founding City, absolutely reeks of official naming committee"},
+{"name": "Gōngnóng Shì", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Workers and Farmers City, painfully on brand for a party approved colony"},
+{"name": "Lièshì Jìniàn", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Martyr's Memorial, for a city built near somewhere people died during settlement"},
+{"name": "Wǔxīng Chéng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Five Stars City, reference to the Chinese flag, very party"},
+{"name": "Chénggōng Shì", "type": "city", "bloc": "Chinese", "notes": "Mandarin, doubles as Success City or a founder's name, ambiguous and useful"},
+{"name": "Tàiyáng Chéng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for City of the Sun, dictators love sun imagery"},
+{"name": "Yǒngshēng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Eternal Life, which is what every dictator actually wants"},
+{"name": "Xīn Shànghǎi", "type": "city", "bloc": "Chinese", "notes": "New Shanghai, because Shanghai is the city that built the ships and everyone knows it"},
+{"name": "Xīn Guǎngzhōu", "type": "city", "bloc": "Chinese", "notes": "New Guangzhou, southern Chinese mercantile tradition transplanted to the stars"},
+{"name": "Lóng Chéng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Dragon City, the dragon is the central symbol of Chinese civilisation"},
+{"name": "Fènghuáng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Phoenix, the mythological bird of rebirth, perfect for a new settlement"},
+{"name": "Míngzhū", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Pearl or Bright Pearl, Shanghai's nickname transplanted outward"},
+{"name": "Tiānjīng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Heavenly Capital, riffs on Tianjin but with more celestial ambition"},
+{"name": "Hépíng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Peace, optimistic founding energy, every new settlement wants this"},
+{"name": "Xīwàng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Hope, straightforward and genuine"},
+{"name": "Chūnfēng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Spring Wind, warm and poetic, classical Chinese literary feel"},
+{"name": "Jīnxīng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Golden Star, combines prosperity symbolism with the stars themselves"},
+{"name": "Yuǎnfāng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Distant Place or Far Away, exactly what this is"},
+{"name": "Tiānhé", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Milky Way or Heavenly River, the Chinese name for the galaxy itself"},
+{"name": "Xīntiān", "type": "city", "bloc": "Chinese", "notes": "Mandarin for New Sky or New Heaven, clean and forward looking"},
+{"name": "Dōngfāng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for The East, loaded with cultural weight, the East is always where civilisation comes from"},
+{"name": "Qīnglong", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Azure Dragon, one of the four celestial creatures of Chinese cosmology"},
+{"name": "Báihǔ", "type": "city", "bloc": "Chinese", "notes": "Mandarin for White Tiger, another of the four celestial creatures, for a frontier military city"},
+{"name": "Xuánwǔ", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Black Tortoise, celestial creature of the north, ancient and enduring"},
+{"name": "Zhūquè", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Vermilion Bird, celestial creature of the south, for a warm or southern settlement"},
+{"name": "Kāifāng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Open or Progressive, the name a reformist faction would push for"},
+{"name": "Zìyóu", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Freedom, which is either brave or ironic depending on who's in charge"},
+{"name": "Xīnmíng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for New Brightness or New Enlightenment, carries echoes of the Ming dynasty"},
+{"name": "Tiāntái", "type": "city", "bloc": "Chinese", "notes": "Heavenly Terrace, real mountain name in China with Buddhist significance, contemplative energy"},
+{"name": "Wànlǐ", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Ten Thousand Li, as in impossibly far, the Chinese equivalent of Timbuktu"},
+{"name": "Chángchéng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Great Wall, for a city built around a defensive perimeter or barrier"},
+{"name": "Sīchóu", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Silk Road, for a trading hub or crossroads city"},
+{"name": "Hànzì", "type": "city", "bloc": "Chinese", "notes": "The Chinese writing system itself as a city name, for a cultural or academic settlement"},
+{"name": "Kǒngzǐ", "type": "city", "bloc": "Chinese", "notes": "Confucius, naming a city after the philosopher is a very deliberate statement of cultural values"},
+{"name": "Táiwān Xīn", "type": "city", "bloc": "Chinese", "notes": "New Taiwan, politically loaded depending on who founded the colony and why they left"},
+{"name": "Xiānggǎng Xīn", "type": "city", "bloc": "Chinese", "notes": "New Hong Kong, for a colony founded by those who remember what was lost, carries enormous grief and defiance"},
+{"name": "Yùlóng", "type": "city", "bloc": "Chinese", "notes": "Jade Dragon, real mountain name in Yunnan, beautiful and slightly mysterious"},
+{"name": "Huánghé", "type": "city", "bloc": "Chinese", "notes": "Yellow River, the cradle of Chinese civilisation transplanted outward, deeply symbolic"},
+{"name": "Chángjiāng", "type": "city", "bloc": "Chinese", "notes": "Yangtze River, longest river in China, for a city built along a major waterway or valley"},
+{"name": "Shèngdì", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Sacred Land or Holy Ground, for a founding settlement with religious or ceremonial significance"},
+{"name": "Xīnlù", "type": "city", "bloc": "Chinese", "notes": "Mandarin for New Road or New Path, simple and forward looking"},
+{"name": "Měilì", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Beautiful, unpretentious and warm, a name ordinary settlers would actually choose"},
+{"name": "Tiānmén", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Heavenly Gate, real place name in China, carries the weight of Tiananmen Square whether intended or not"},
+{"name": "Yuèliàng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Moon, the moon is central to Chinese culture and the Mid-Autumn Festival"},
+{"name": "Xīngkōng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Starry Sky, for a colony where the night sky is particularly spectacular"},
+{"name": "Qiánjìn", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Forward or Advance, the name every revolutionary government gives its model city"},
+{"name": "New Carthage", "type": "city", "bloc": "Wildcard", "notes": "Carthage rebuilt again, as it always is, carries the defiance of a city that refuses to stay dead"},
+{"name": "Avalon", "type": "city", "bloc": "Wildcard", "notes": "Arthurian mythological isle of the blessed, the place heroes go to heal, works beautifully as a medical or retreat colony"},
+{"name": "Elysium", "type": "city", "bloc": "Wildcard", "notes": "Greek mythological paradise for heroes, everyone knows what it means and nobody gets tired of it"},
+{"name": "Tartarus", "type": "city", "bloc": "Wildcard", "notes": "The deepest pit of Greek mythology, for your mining colony or penal settlement, someone named it this as a joke and it stuck"},
+{"name": "Byzantium", "type": "city", "bloc": "Wildcard", "notes": "The city that refused to fall for a thousand years after Rome did, for a colony that sees itself as carrying civilisation forward"},
+{"name": "New Alexandria", "type": "city", "bloc": "Wildcard", "notes": "Because someone always rebuilds the library, for your academic or archival settlement"},
+{"name": "Ragnarok", "type": "city", "bloc": "Wildcard", "notes": "Norse end of the world, for your most battered frontier town, the one that keeps getting hit and keeps standing"},
+{"name": "Valhalla", "type": "city", "bloc": "Wildcard", "notes": "Norse hall of the honoured dead, for a military settlement or memorial city"},
+{"name": "Ithaca", "type": "city", "bloc": "Wildcard", "notes": "The home Odysseus spent twenty years trying to reach, for a colony that represents the end of a very long journey"},
+{"name": "Zion", "type": "city", "bloc": "Wildcard", "notes": "The promised destination across every tradition that uses it, Jewish, Christian, Rastafarian, and every dystopian novel ever written"},
+{"name": "Babel", "type": "city", "bloc": "Wildcard", "notes": "The city where everyone stopped understanding each other, for your most chaotic multicultural trading hub"},
+{"name": "Arcadia", "type": "city", "bloc": "Wildcard", "notes": "Greek pastoral paradise, the idealised simple life, for an agricultural colony that takes its identity seriously"},
+{"name": "Erebus", "type": "city", "bloc": "Wildcard", "notes": "Greek primordial darkness, also the name of one of Franklin's lost Arctic ships, for a cold or dark world settlement"},
+{"name": "Lethe", "type": "city", "bloc": "Wildcard", "notes": "The river of forgetting in Greek mythology, for a colony founded by people who wanted to leave everything behind"},
+{"name": "Styx", "type": "city", "bloc": "Wildcard", "notes": "The river between worlds in Greek mythology, perfect for a transit or border settlement"},
+{"name": "Novum", "type": "city", "bloc": "Wildcard", "notes": "Simply New in Latin, the name every colonial administration defaults to when the committee can't agree"},
+{"name": "Terminus", "type": "city", "bloc": "Wildcard", "notes": "The end of the line, Roman god of boundaries, also Asimov's Foundation city, triple loaded"},
+{"name": "Haven", "type": "city", "bloc": "Wildcard", "notes": "What everyone hopes a new settlement will be, simple and universal and quietly desperate"},
+{"name": "Threshold", "type": "city", "bloc": "Wildcard", "notes": "The place between here and there, for a transit or gateway settlement"},
+{"name": "Meridian", "type": "city", "bloc": "Wildcard", "notes": "The line that divides, for a city built at a geographical or political boundary"},
+{"name": "Perihelion", "type": "city", "bloc": "Wildcard", "notes": "The point in an orbit closest to the sun, for a city on a world with extreme seasons or a dramatic orbital path"},
+{"name": "Aphelion", "type": "city", "bloc": "Wildcard", "notes": "The point in an orbit furthest from the sun, the cold lonely counterpart to Perihelion"},
+{"name": "Nadir", "type": "city", "bloc": "Wildcard", "notes": "The lowest point, which either means someone named it ironically or it was founded after a catastrophe"},
+{"name": "Zenith", "type": "city", "bloc": "Wildcard", "notes": "The highest point, for your most ambitious or elevated settlement, literally or figuratively"},
+{"name": "Ouroboros", "type": "city", "bloc": "Wildcard", "notes": "The snake eating its own tail, ancient symbol of cycles and eternity, for a city built on the ruins of a previous settlement"},
+{"name": "Chimera", "type": "city", "bloc": "Wildcard", "notes": "The impossible creature, for a city that shouldn't exist but does anyway"},
+{"name": "Lazarus", "type": "city", "bloc": "Wildcard", "notes": "The man who came back from the dead, for a settlement that was abandoned and recolonised"},
+{"name": "Penumbra", "type": "city", "bloc": "Wildcard", "notes": "The partial shadow at the edge of an eclipse, for a city in a twilight zone or perpetual half-light"},
+{"name": "New Samarkand", "type": "city", "bloc": "Wildcard", "notes": "Samarkand was the jewel of the Silk Road, crossroads of every civilisation, for your great trading hub"},
+{"name": "New Babylon", "type": "city", "bloc": "Wildcard", "notes": "Babylon meant the world's greatest city to everyone who heard of it, someone is always going to try to rebuild it"},
+{"name": "Colossus", "type": "city", "bloc": "Wildcard", "notes": "The great statue that stood at the harbour entrance, for your largest or most imposing settlement"},
+{"name": "Exodus", "type": "city", "bloc": "Wildcard", "notes": "The act of leaving, for a colony that defines itself entirely by what it escaped from"},
+{"name": "Genesis", "type": "city", "bloc": "Wildcard", "notes": "The beginning, for the first settlement on a world, the one that makes everything else possible"},
+{"name": "Crucible", "type": "city", "bloc": "Wildcard", "notes": "The vessel where things are transformed under heat, for an industrial city or one that forged something important"},
+{"name": "Ironhaven", "type": "city", "bloc": "Wildcard", "notes": "Invented, sounds like a place that built itself out of necessity and never stopped, industrial and self reliant"},
+{"name": "Duskfall", "type": "city", "bloc": "Wildcard", "notes": "Invented, for a city on a world where the sunsets are the thing everyone talks about"},
+{"name": "Ashford", "type": "city", "bloc": "Wildcard", "notes": "Invented but feels like a real place, understated and slightly melancholy, the kind of city that has a good pub and a bad history"},
+{"name": "Coldwater", "type": "city", "bloc": "Wildcard", "notes": "Invented, practical and frontier, named for the first thing settlers found that kept them alive"},
+{"name": "Farpoint", "type": "city", "bloc": "Wildcard", "notes": "Invented, the furthest outpost, the one that gets resupplied last and complains about it most"},
+{"name": "Greywarden", "type": "city", "bloc": "Wildcard", "notes": "Invented, sounds like a city with a wall and a long memory, frontier defensive energy"},
+{"name": "Heliodor", "type": "city", "bloc": "Wildcard", "notes": "A golden yellow gemstone, also Greek for gift of the sun, for a wealthy or sun-drenched settlement"},
+{"name": "Irongate", "type": "city", "bloc": "Wildcard", "notes": "Invented, the city you have to pass through to get anywhere else, has tollbooth energy and enormous political leverage"},
+{"name": "Lyonesse", "type": "city", "bloc": "Wildcard", "notes": "The lost Arthurian land beneath the sea, for a colony that knows it might not last but builds anyway"},
+{"name": "Mithril", "type": "city", "bloc": "Wildcard", "notes": "Tolkien's indestructible metal, for a mining settlement that found something extraordinary"},
+{"name": "New Byzantium", "type": "city", "bloc": "Wildcard", "notes": "Someone always tries to keep the Eastern Empire alive, for a colony that sees itself as the true continuation of something great"},
+{"name": "Orbis", "type": "city", "bloc": "Wildcard", "notes": "Latin for world or circle, clean and serious, the name a united colonial administration would choose"},
+{"name": "Redoubt", "type": "city", "bloc": "Wildcard", "notes": "A last defensive position, for your most beleaguered frontier settlement, the one that held when everything else fell"},
+{"name": "Solstice", "type": "city", "bloc": "Wildcard", "notes": "The turning point of the year, for a city founded at a moment of change or on a world with dramatic seasons"},
+{"name": "Wanderer", "type": "city", "bloc": "Wildcard", "notes": "For a city that started as a mobile settlement and stopped moving, or never quite lost the feeling that it might"},
+{"name": "Wraithwood", "type": "city", "bloc": "Wildcard", "notes": "Invented, slightly sinister, for a city built in or near something that unsettles people, the kind of place with unexplained stories"},
+{"name": "Hongik", "type": "colony", "bloc": "East Asian", "notes": "Korean founding philosophy meaning benefit all mankind, gorgeous and quietly enormous as a colony name"},
+{"name": "Hongik", "type": "city", "bloc": "East Asian", "notes": "Korean founding philosophy meaning benefit all mankind"},
+{"name": "Qianjin", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for Forward or Advance, the name every revolutionary government gives its model city"},
+{"name": "Renmin Xindi", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for People's New Land, very party approved"},
+{"name": "Renmin Xindi", "type": "city", "bloc": "Chinese", "notes": "Mandarin for People's New Land, very party approved"},
+{"name": "Tianmen", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for Heavenly Gate, carries the weight of Tiananmen Square whether intended or not"},
+{"name": "Yuancheng", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for Distant City, honest and understated"},
+{"name": "Yuancheng", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Distant City, honest and understated"},
+{"name": "Xīn Hàn", "type": "colony", "bloc": "Chinese", "notes": "New Han, the Han dynasty was China's golden age and the source of the word Chinese itself, naming a colony this is a statement of civilisational pride"},
+{"name": "Xīn Hàn", "type": "city", "bloc": "Chinese", "notes": "New Han, the Han dynasty was China's golden age and the source of the word Chinese itself"},
+{"name": "Tiāncháo", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for Celestial Empire, the traditional Chinese name for China itself, enormously loaded with imperial pride"},
+{"name": "Tiāncháo", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Celestial Empire, the traditional Chinese name for China itself"},
+{"name": "Lóngmén", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for Dragon Gate, from the legend of carp leaping the dragon gate to become dragons, symbolises transformation and achievement"},
+{"name": "Lóngmén", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Dragon Gate, symbolises transformation and achievement"},
+{"name": "Xīnchāo", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for New Tide or New Wave, forward looking and dynamic, the name a younger generation of settlers would choose"},
+{"name": "Xīnchāo", "type": "city", "bloc": "Chinese", "notes": "Mandarin for New Tide or New Wave, forward looking and dynamic"},
+{"name": "Bǎodǎo", "type": "colony", "bloc": "Chinese", "notes": "Mandarin for Treasure Island, the affectionate Taiwanese nickname for Taiwan, for a colony founded by those carrying that particular cultural memory"},
+{"name": "Bǎodǎo", "type": "city", "bloc": "Chinese", "notes": "Mandarin for Treasure Island, the affectionate Taiwanese nickname for Taiwan"}
+
+
+
+
+  // ── END PLACEHOLDER DATA ──────────────────────────────────
+
+];
+
+// ============================================================
+//  ENGINE — no need to edit below this line
+// ============================================================
+
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generate() {
+  const primaryBloc = document.getElementById('blocSelect').value;
+
+  // Split data by type and bloc
+  const colonyNames = NAME_DATA.filter(e => e.type === 'colony' && e.bloc === primaryBloc);
+  const primaryCities = NAME_DATA.filter(e => e.type === 'city' && e.bloc === primaryBloc);
+  const otherCities = NAME_DATA.filter(e => e.type === 'city' && e.bloc !== primaryBloc);
+
+  if (colonyNames.length === 0) {
+    alert('No colony names found for this bloc. Check your data.');
+    return;
+  }
+
+  if (primaryCities.length === 0 || otherCities.length === 0) {
+    alert('Not enough city data to generate. Check your data.');
+    return;
+  }
+
+  // Pick colony name
+  const colony = pick(colonyNames);
+
+  // Pick 20 cities:
+  // Cities 1-2: always primary bloc
+  // Cities 3-20: 40% primary bloc, 60% other blocs
+  const cities = [];
+  const usedNames = new Set();
+
+  function pickUnique(pool) {
+    const available = pool.filter(e => !usedNames.has(e.name));
+    if (available.length === 0) return null;
+    const chosen = pick(available);
+    usedNames.add(chosen.name);
+    return chosen;
+  }
+
+  // First 2 from primary bloc
+  for (let i = 0; i < 2; i++) {
+    const c = pickUnique(primaryCities);
+    if (c) cities.push(c);
+  }
+
+  // Remaining 18
+  for (let i = 0; i < 18; i++) {
+    const fromPrimary = Math.random() < 0.4;
+    let c = null;
+    if (fromPrimary) {
+      c = pickUnique(primaryCities);
+      if (!c) c = pickUnique(otherCities);
+    } else {
+      c = pickUnique(otherCities);
+      if (!c) c = pickUnique(primaryCities);
+    }
+    if (c) cities.push(c);
+  }
+
+  // Render colony
+  document.getElementById('colonyName').textContent = colony.name;
+  document.getElementById('colonyBloc').textContent = colony.bloc;
+  document.getElementById('colonyNotes').textContent = colony.notes;
+
+  // Reset colony accordion
+  const colonyToggle = document.getElementById('colonyToggle');
+  const colonyDetails = document.getElementById('colonyDetails');
+  colonyToggle.classList.remove('open');
+  colonyDetails.classList.remove('open');
+
+  // Render cities
+  const cityList = document.getElementById('cityList');
+  cityList.innerHTML = '';
+
+  cities.forEach((city, idx) => {
+    const item = document.createElement('div');
+    item.className = 'city-item';
+
+    item.innerHTML = `
+      <div class="city-item-top">
+        <span class="city-number">${String(idx + 1).padStart(2, '0')}</span>
+        <span class="city-name">${city.name}</span>
+        <button class="city-toggle" aria-label="Show details">+</button>
+      </div>
+      <div class="city-details">
+        <div class="detail-row">
+          <span class="detail-label">Bloc</span>
+          <span class="detail-value">${city.bloc}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Notes</span>
+          <span class="detail-value">${city.notes}</span>
+        </div>
+      </div>
+    `;
+
+    const toggle = item.querySelector('.city-toggle');
+    const details = item.querySelector('.city-details');
+    toggle.addEventListener('click', () => {
+      const isOpen = details.classList.contains('open');
+      details.classList.toggle('open', !isOpen);
+      toggle.classList.toggle('open', !isOpen);
+      toggle.textContent = isOpen ? '+' : '×';
+    });
+
+    cityList.appendChild(item);
+  });
+
+  // Show output
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('output').style.display = 'block';
+
+  const results = document.getElementById('results');
+  results.classList.remove('visible');
+  requestAnimationFrame(() => requestAnimationFrame(() => results.classList.add('visible')));
+}
+
+// Copy button
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const colonyName  = document.getElementById('colonyName').textContent;
+  const colonyBloc  = document.getElementById('colonyBloc').textContent;
+  const colonyNotes = document.getElementById('colonyNotes').textContent;
+
+  const cityItems = document.querySelectorAll('.city-item');
+  const cityLines = Array.from(cityItems).map(item => {
+    const name  = item.querySelector('.city-name').textContent.trim();
+    const bloc  = item.querySelectorAll('.detail-value')[0].textContent.trim();
+    const notes = item.querySelectorAll('.detail-value')[1].textContent.trim();
+    return `* ${name} — ${bloc} — ${notes}`;
+  });
+
+  const text = [
+    `Colony Name: ${colonyName}`,
+    `Origin: ${colonyBloc} — ${colonyNotes}`,
+    ``,
+    `Cities:`,
+    ...cityLines
+  ].join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy All';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+});
+
+// Colony accordion
+document.getElementById('colonyToggle').addEventListener('click', () => {
+  const toggle = document.getElementById('colonyToggle');
+  const details = document.getElementById('colonyDetails');
+  const isOpen = details.classList.contains('open');
+  details.classList.toggle('open', !isOpen);
+  toggle.classList.toggle('open', !isOpen);
+  toggle.querySelector('.icon').textContent = isOpen ? '+' : '×';
+});
+
+document.getElementById('generate').addEventListener('click', generate);
+
+// Show results container on load
+document.getElementById('results').classList.add('visible');
+</script>
+</body>
+</html>
